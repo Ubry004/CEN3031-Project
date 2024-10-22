@@ -1,24 +1,65 @@
-import logo from './logo.svg';
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import './App.css';
+import CreateAccount from './CreateAccount';
 
 function App() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    console.log('Username:', username);
+    console.log('Password:', password);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <div className="App">
+        <header className="App-header">
+          <Routes>
+            {/* Login Page */}
+            <Route
+              path="/"
+              element={
+                <div>
+                  <h1>Welcome to Medi-Cal</h1>
+                  <h2>Login</h2>
+                  <form onSubmit={handleLogin} className="login-form">
+                    <div>
+                      <label htmlFor="username">Username:</label>
+                      <input
+                        type="text"
+                        id="username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="password">Password:</label>
+                      <input
+                        type="password"
+                        id="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <button type="submit">Login</button>
+                  </form>
+                  <p className="new-user-message">
+                    New here? <Link to="/create-account">Create an account</Link>
+                  </p>
+                </div>
+              }
+            />
+            {/* Create Account link */}
+            <Route path="/create-account" element={<CreateAccount />} />
+          </Routes>
+        </header>
+      </div>
+    </Router>
   );
 }
 

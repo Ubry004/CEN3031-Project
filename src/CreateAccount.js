@@ -15,7 +15,26 @@ function CreateAccount() {
     console.log('New Account - Email:', email);
     console.log('New Account - Username:', username);
     console.log('New Account - Password:', password);
+    register(firstName, lastName, email, username, password);
   };
+
+  function register(firstName, lastName, email, username, password) {
+    fetch('http://localhost:5000/register', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ firstName, lastName, email, username, password })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Registration failed');
+        return response.json();
+    })
+    .then(data => {
+        console.log('Registration successful:', data);
+    })
+    .catch(error => console.error('Error:', error));
+  }
 
   return (
     <div className="create-account">

@@ -2,6 +2,7 @@ import mysql.connector as mysql
 from werkzeug.security import check_password_hash
 import jwt
 from flask import Flask, abort, jsonify, request, current_app
+from flask_cors import CORS
 from functools import wraps
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import datetime
@@ -10,7 +11,7 @@ from datetime import datetime
 # We'll use Werkzeug for hashing later whenever we do that
 
 app = Flask(__name__)
-
+CORS(app)
 # =========== JWT stuff for logins and authentication ==================================================================
 
 # Configure the JWT

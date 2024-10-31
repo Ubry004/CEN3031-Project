@@ -1,5 +1,10 @@
 /*app.css*/
 
+* {
+  margin: 0;
+  padding: 0;
+}
+
 .App {
   text-align: center;
 }
@@ -48,6 +53,7 @@
   border: none;
   color: white;
   cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
 .login-form button:hover {

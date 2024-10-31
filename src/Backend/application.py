@@ -6,7 +6,7 @@ from flask_cors import CORS
 from functools import wraps
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import datetime
-from datetime import datetime
+# from datetime import datetime
 
 # We'll use Werkzeug for hashing later whenever we do that
 
@@ -86,7 +86,7 @@ def role_required(roles):
 
             if user_role not in roles:
                 return jsonify({"error": "Access forbidden"}), 403  # Forbidden
-            return f(user_id=user_id, *args, **kwargs)  # Pass user_id to the decorated function
+            return f(user_id=user_id)  # Pass user_id to the decorated function
         return decorated_function
     return decorator
 
@@ -153,7 +153,7 @@ def register():
         )
         conn.commit()
         return jsonify({"msg": "User created successfully"}), 201
-    except mysql.connector.Error as err:
+    except mysql.Error as err:
         return jsonify({"error": str(err)}), 400
     finally:
         cursor.close()
@@ -180,7 +180,7 @@ def update_user_role(user_id):
         cursor.execute(query, (new_role, user_id))
         conn.commit()
         return jsonify({"message": "User role updated successfully"}), 200
-    except mysql.connector.Error as err:
+    except mysql.Error as err:
         return jsonify({"error": str(err)}), 400
     finally:
         cursor.close()
@@ -202,7 +202,7 @@ def update_username(user_id):
         cursor.execute(query, (new_username, user_id))
         conn.commit()
         return jsonify({"message": "Username updated successfully"}), 200
-    except mysql.connector.Error as err:
+    except mysql.Error as err:
         return jsonify({"error": str(err)}), 400
     finally:
         cursor.close()
@@ -245,7 +245,7 @@ def update_password_hash(user_id):
         cursor.execute(query, (new_password_hash, user_id))
         conn.commit()
         return jsonify({"message": "Password hash updated successfully"}), 200
-    except mysql.connector.Error as err:
+    except mysql.Error as err:
         return jsonify({"error": str(err)}), 400
     finally:
         cursor.close()
@@ -267,7 +267,7 @@ def update_first_name(user_id):
         cursor.execute(query, (new_first_name, user_id))
         conn.commit()
         return jsonify({"message": "First name updated successfully"}), 200
-    except mysql.connector.Error as err:
+    except mysql.Error as err:
         return jsonify({"error": str(err)}), 400
     finally:
         cursor.close()
@@ -289,7 +289,7 @@ def update_last_name(user_id):
         cursor.execute(query, (new_last_name, user_id))
         conn.commit()
         return jsonify({"message": "Last name updated successfully"}), 200
-    except mysql.connector.Error as err:
+    except mysql.Error as err:
         return jsonify({"error": str(err)}), 400
     finally:
         cursor.close()
@@ -311,7 +311,7 @@ def update_email(user_id):
         cursor.execute(query, (new_email, user_id))
         conn.commit()
         return jsonify({"message": "Email updated successfully"}), 200
-    except mysql.connector.Error as err:
+    except mysql.Error as err:
         return jsonify({"error": str(err)}), 400
     finally:
         cursor.close()
@@ -332,7 +332,7 @@ def set_appointment():
 
     # Convert appointment_date to datetime
     try:
-        appointment_datetime = datetime.strptime(appointment_date, "%Y-%m-%d %H:%M:%S")
+        appointment_datetime = datetime.datetime.strptime(appointment_date, "%Y-%m-%d %H:%M:%S")
     except ValueError:
         return jsonify({"msg": "Invalid date format. Use YYYY-MM-DD HH:MM:SS"}), 400
 

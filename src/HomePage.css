@@ -1,23 +1,79 @@
-/* HomePage.css */
+/* Basic layout for homepage */
 
+.homepage {
+  font-family: Arial, sans-serif;
+}
 
-  
-  h1 {
-    font-size: 2.5rem;
-    margin-bottom: 20px;
-  }
-  
-  button {
-    padding: 10px 20px;
-    font-size: 1rem;
-    border: none;
-    border-radius: 5px;
-    background-color: #007bff;
-    color: white;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  button:hover {
-    background-color: #0056b3;
-  }
+/* Top ribbon style */
+.homepage-header {
+  display: flex;
+  position: fixed;
+  width: stretch;
+  top: 0;
+  left: 0;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #333333;
+  color: white;
+}
+
+/* Logo styling */
+.logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  padding: 10px 20px;
+}
+
+/* Logout button styling */
+.logout-button {
+  padding: 10px 15px;
+  font-size: 1rem;
+  gap: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.logout-button:hover {
+  background-color: #0056b3;
+}
+
+/* Tab link styling */
+.tabs {
+  display: flex;
+  gap: 10px;
+}
+
+.tablink {
+  background-color: #555;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 10px 15px;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+.tablink:hover {
+  background-color: #777;
+}
+
+/* Tab content styling */
+.tabcontent {
+  display: none;
+  width: 500px;
+  padding: 50px;
+  text-align: center;
+  color: white;
+}
+
+/* Individual tab colors */
+#Calendar { background-color: red; }
+#Medications { background-color: green; }
+#Appointments { background-color: blue; }
+#Other { background-color: orange; }

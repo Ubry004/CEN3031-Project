@@ -1,5 +1,5 @@
 import mysql.connector as mysql
-from werkzeug.security import check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 from flask import Flask, abort, jsonify, request, current_app
 from flask_cors import CORS
@@ -115,8 +115,7 @@ def login():
     cursor.close()
     conn.close()
 
-    if user and user['PasswordHash'] == password:  # This too will probably need to change one passwords are hashed
-        # Create JWT token. Automatically signs the user out after 15 minutes
+    if user and check_password_hash(user['PasswordHash'], password):        # Create JWT token. Automatically signs the user out after 15 minutes
         # access_token = create_access_token(identity=user['UserID'], expires_delta=datetime.timedelta(minutes=15))
         token = generate_jwt(user['UserID'])
         return jsonify(access_token=token), 200
@@ -140,8 +139,7 @@ def register():
     last_name = data.get('lastName')
     email = data.get('email')
 
-    # TODO: Hash the password before storage
-    hashed_password = password  # Replace with a hash function
+    hashed_password = generate_password_hash(password)
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -235,7 +233,8 @@ updateUsername(1, 'newUsername123');
 @role_required(['patient', 'operator'])
 def update_password_hash(user_id):
     data = request.get_json()
-    new_password_hash = data.get('passwordHash')
+    new_password = data.get('password')
+    new_password_hash = generate_password_hash(new_password)
 
     conn = get_db_connection()
     cursor = conn.cursor()

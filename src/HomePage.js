@@ -1,8 +1,13 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import './HomePage.css';
 
 const HomePage = ({ token, setToken }) => {
+  HomePage.propTypes = {
+    token: PropTypes.string, // or PropTypes.string.isRequired if it's always required
+    setToken: PropTypes.func.isRequired
+  };
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -14,7 +19,7 @@ const HomePage = ({ token, setToken }) => {
   console.log('Current Token:', token); // Debugging line to check the token
 
   const navBar = (cityName, element, color) => {  // copied from https://www.w3schools.com/howto/howto_js_tab_header.asp
-    var i, tabcontent, tablinks;
+    let i, tabcontent, tablinks;
     tabcontent = document.getElementsByClassName("tabcontent");
     for (i = 0; i < tabcontent.length; i++) {
       tabcontent[i].style.display = "none";

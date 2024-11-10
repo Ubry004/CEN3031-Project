@@ -1,15 +1,14 @@
 import mysql.connector as mysql
-from werkzeug.security import check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
 from flask import Flask, abort, jsonify, request, current_app
 from flask_cors import CORS
 from functools import wraps
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import datetime
+# from datetime import datetime
 
 # We'll use Werkzeug for hashing later whenever we do that
-
-# TODO: Figure out what the hell is up with the authorization code
 
 app = Flask(__name__)
 CORS(app)
@@ -87,7 +86,7 @@ def role_required(roles):
 
             if user_role not in roles:
                 return jsonify({"error": "Access forbidden"}), 403  # Forbidden
-            return f(user_id=user_id, *args, **kwargs)  # Pass user_id to the decorated function
+            return f(user_id=user_id)  # Pass user_id to the decorated function
         return decorated_function
     return decorator
 
@@ -116,8 +115,7 @@ def login():
     cursor.close()
     conn.close()
 
-    if user and user['PasswordHash'] == password:  # This too will probably need to change one passwords are hashed
-        # Create JWT token. Automatically signs the user out after 15 minutes
+    if user and check_password_hash(user['PasswordHash'], password):        # Create JWT token. Automatically signs the user out after 15 minutes
         # access_token = create_access_token(identity=user['UserID'], expires_delta=datetime.timedelta(minutes=15))
         token = generate_jwt(user['UserID'])
         return jsonify(access_token=token), 200
@@ -141,8 +139,7 @@ def register():
     last_name = data.get('lastName')
     email = data.get('email')
 
-    # TODO: Hash the password before storage
-    hashed_password = password  # Replace with a hash function
+    hashed_password = generate_password_hash(password)
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -154,7 +151,7 @@ def register():
         )
         conn.commit()
         return jsonify({"msg": "User created successfully"}), 201
-    except mysql.connector.Error as err:
+    except mysql.Error as err:
         return jsonify({"error": str(err)}), 400
     finally:
         cursor.close()
@@ -181,7 +178,7 @@ def update_user_role(user_id):
         cursor.execute(query, (new_role, user_id))
         conn.commit()
         return jsonify({"message": "User role updated successfully"}), 200
-    except mysql.connector.Error as err:
+    except mysql.Error as err:
         return jsonify({"error": str(err)}), 400
     finally:
         cursor.close()
@@ -203,7 +200,7 @@ def update_username(user_id):
         cursor.execute(query, (new_username, user_id))
         conn.commit()
         return jsonify({"message": "Username updated successfully"}), 200
-    except mysql.connector.Error as err:
+    except mysql.Error as err:
         return jsonify({"error": str(err)}), 400
     finally:
         cursor.close()
@@ -236,7 +233,8 @@ updateUsername(1, 'newUsername123');
 @role_required(['patient', 'operator'])
 def update_password_hash(user_id):
     data = request.get_json()
-    new_password_hash = data.get('passwordHash')
+    new_password = data.get('password')
+    new_password_hash = generate_password_hash(new_password)
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -246,7 +244,7 @@ def update_password_hash(user_id):
         cursor.execute(query, (new_password_hash, user_id))
         conn.commit()
         return jsonify({"message": "Password hash updated successfully"}), 200
-    except mysql.connector.Error as err:
+    except mysql.Error as err:
         return jsonify({"error": str(err)}), 400
     finally:
         cursor.close()
@@ -268,7 +266,7 @@ def update_first_name(user_id):
         cursor.execute(query, (new_first_name, user_id))
         conn.commit()
         return jsonify({"message": "First name updated successfully"}), 200
-    except mysql.connector.Error as err:
+    except mysql.Error as err:
         return jsonify({"error": str(err)}), 400
     finally:
         cursor.close()
@@ -290,7 +288,7 @@ def update_last_name(user_id):
         cursor.execute(query, (new_last_name, user_id))
         conn.commit()
         return jsonify({"message": "Last name updated successfully"}), 200
-    except mysql.connector.Error as err:
+    except mysql.Error as err:
         return jsonify({"error": str(err)}), 400
     finally:
         cursor.close()
@@ -312,11 +310,52 @@ def update_email(user_id):
         cursor.execute(query, (new_email, user_id))
         conn.commit()
         return jsonify({"message": "Email updated successfully"}), 200
-    except mysql.connector.Error as err:
+    except mysql.Error as err:
         return jsonify({"error": str(err)}), 400
     finally:
         cursor.close()
         conn.close()
+
+# Set Appointment
+@app.route('/set_appointment', methods=['POST'])
+def set_appointment():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    doctor_id = data.get('doctor_id')
+    appointment_date = data.get('appointment_date')
+    description = data.get('description')
+
+    # Validate required fields
+    if not (user_id and doctor_id and appointment_date and description):
+        return jsonify({"msg": "Missing required fields"}), 400
+
+    # Convert appointment_date to datetime
+    try:
+        appointment_datetime = datetime.datetime.strptime(appointment_date, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return jsonify({"msg": "Invalid date format. Use YYYY-MM-DD HH:MM:SS"}), 400
+
+    # Insert new appointment into the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    query = """
+    INSERT INTO Appointments (UserID, DoctorID, AppointmentDate, Description)
+    VALUES (%s, %s, %s, %s)
+    """
+    values = (user_id, doctor_id, appointment_datetime, description)
+
+    try:
+        cursor.execute(query, values)
+        conn.commit()
+        appointment_id = cursor.lastrowid  # Get the ID of the newly created appointment
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"msg": "Failed to set appointment", "error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+    return jsonify({"msg": "Appointment set successfully", "appointment_id": appointment_id}), 201
 
 # For testing
 @app.route('/')

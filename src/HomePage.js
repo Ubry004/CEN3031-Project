@@ -1,14 +1,38 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import InteractionPlugin from '@fullcalendar/interaction';
 import './HomePage.css';
 
 const HomePage = ({ token, setToken }) => {
   HomePage.propTypes = {
-    token: PropTypes.string, // or PropTypes.string.isRequired if it's always required
+    token: PropTypes.string,
     setToken: PropTypes.func.isRequired
   };
+
   const navigate = useNavigate();
+
+  const [events, setEvents] = useState([]); // Start with an empty events array
+
+  const addEvent = () => {
+    const title = prompt("Enter event title:");
+    const start = prompt("Enter start date (YYYY-MM-DD):");
+
+    // Check if all details are provided
+    if (title && start) {
+      // Add new event to the events array
+      setEvents([...events, { title, start}]);
+    } else {
+      alert("Please fill in all event details.");
+    }
+  };
+
+  const handleEventClick = (clickInfo) => { // Basic function to make popup on event click
+    const { title, start} = clickInfo.event;
+    alert(`Title: ${title}\nStart: ${start.toISOString().slice(0, 10)}`);
+  };
 
   const handleLogout = () => {
     setToken(null); // Reset the token on logout
@@ -18,7 +42,7 @@ const HomePage = ({ token, setToken }) => {
 
   console.log('Current Token:', token); // Debugging line to check the token
 
-  const navBar = (cityName, element, color) => {  // copied from https://www.w3schools.com/howto/howto_js_tab_header.asp
+  const navBar = (cityName, element, color) => {
     let i, tabcontent, tablinks;
     tabcontent = document.getElementsByClassName("tabcontent");
     for (i = 0; i < tabcontent.length; i++) {
@@ -41,23 +65,33 @@ const HomePage = ({ token, setToken }) => {
   return (
     <div className="homepage">
       <header className="homepage-header">
-        <div className="logo"> {/* Placeholder for logo */}
+        <div className="logo">
           Medi-Cal
         </div>
         <div className="tabs">
-          <button className="tablink" onClick={(e) => navBar('Calendar', e.target, 'red')}>Calendar</button>
+          <button className="tablink" onClick={addEvent}>Add Appointments</button>
           <button className="tablink" onClick={(e) => navBar('Medications', e.target, 'green')}>Medications</button>
-          <button className="tablink" onClick={(e) => navBar('Appointments', e.target, 'blue')}>Appointments</button>
           <button className="tablink" onClick={(e) => navBar('Other', e.target, 'orange')}>Other</button>
           <button className="logout-button" onClick={handleLogout}>
-          Logout
-        </button>
+            Logout
+          </button>
         </div>
       </header>
-      <div id="Calendar" className="tabcontent">
-        <h1>Calendar</h1>
-        <p> . . . </p>
+
+      <div id="Calendar">
+        <FullCalendar
+          plugins={[dayGridPlugin,InteractionPlugin]}
+          initialView="dayGridMonth"
+          events={events}
+          eventClick={handleEventClick}
+          headerToolbar={{
+            start: "today",
+            center: "title",
+            end: "prev,next"
+          }}
+        />
       </div>
+
       <div id="Medications" className="tabcontent">
         <h1>Medications</h1>
         <p> . . . </p>

@@ -55,20 +55,22 @@ function App() {
                 <h2>Login</h2>
                 <form onSubmit={handleLogin} className="login-form"> {/* Login form */}
                   <div>
-                    <label htmlFor="username">Username:</label>
+                    <label htmlFor="username">Username: </label>
                     <input
                       type="text"
                       id="username"
+                      className="text-entry"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)} // Update username state
                       required // Input is required
                     />
                   </div>
                   <div>
-                    <label htmlFor="password">Password:</label>
+                    <label htmlFor="password">Password: </label>
                     <input
                       type="password"
                       id="password"
+                      className="text-entry"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)} // Update password state
                       required // Input is required

@@ -15,6 +15,7 @@ const HomePage = ({ token, setToken }) => {
   const navigate = useNavigate();
 
   const [events, setEvents] = useState([]); // Start with an empty events array
+  const [activeTab, setActiveTab] = useState('Calendar'); // Track active tab (Calendar, Medications, etc.)
 
   const addEvent = () => {
     const title = prompt("Enter event title:");
@@ -29,7 +30,7 @@ const HomePage = ({ token, setToken }) => {
     }
   };
 
-  const handleEventClick = (clickInfo) => { // Basic function to make popup on event click
+  const handleEventClick = (clickInfo) => { // Basic popup on event click
     const { title, start} = clickInfo.event;
     alert(`Title: ${title}\nStart: ${start.toISOString().slice(0, 10)}`);
   };
@@ -40,70 +41,65 @@ const HomePage = ({ token, setToken }) => {
     navigate('/'); // Redirect to login page
   };
 
-  console.log('Current Token:', token); // Debugging line to check the token
-
-  const navBar = (cityName, element, color) => {
-    let i, tabcontent, tablinks;
-    tabcontent = document.getElementsByClassName("tabcontent");
-    for (i = 0; i < tabcontent.length; i++) {
-      tabcontent[i].style.display = "none";
-    }
-    tablinks = document.getElementsByClassName("tablink");
-    for (i = 0; i < tablinks.length; i++) {
-      tablinks[i].style.backgroundColor = "";
-    }
-    const navElement = document.getElementById(cityName);
-    if (navElement) {
-      navElement.style.display = "block";
-      element.style.backgroundColor = color;
-      console.log(`Updated ${cityName} tab with color ${color}`);
+  //console.log('Current Token:', token); // Debugging line to check the token
+  
+  const navBar = (tabName) => {
+    const navElement = document.getElementById(tabName);
+  
+    if (tabName === 'Medications') {
+      if (navElement) {
+        navElement.style.display = "block";
+      }
+    } else if (tabName === 'Calendar') {
+      //setShowCalendar(true);
+      if (navElement) {
+        navElement.style.display = "none";
+      }
     } else {
-      console.error(`Element with id ${cityName} not found`);
+      console.warn(`Element with id '${tabName}' does not exist.`);
     }
+  };
+
+  const toggleView = (view) => {
+    setActiveTab(view);
+    console.log('Active Tab:', activeTab);
   };
 
   return (
     <div className="homepage">
       <header className="homepage-header">
-        <div className="logo">
-          Medi-Cal
-        </div>
+        <div className="logo">Medi-Cal</div>
         <div className="tabs">
-          <button className="tablink" onClick={addEvent}>Add Appointments</button>
-          <button className="tablink" onClick={(e) => navBar('Medications', e.target, 'green')}>Medications</button>
-          <button className="tablink" onClick={(e) => navBar('Other', e.target, 'orange')}>Other</button>
-          <button className="logout-button" onClick={handleLogout}>
-            Logout
-          </button>
+          <button className="tablink" onClick={addEvent}>Add Appointment</button>
+          <button className="tablink" onClick={() => toggleView('Calendar')}>Calendar</button>
+          <button className="tablink" onClick={() => toggleView('Medications')}>Medications</button>
+          <button className="logout-button" onClick={handleLogout}>Logout</button>
         </div>
       </header>
 
-      <div id="Calendar">
-        <FullCalendar
-          plugins={[dayGridPlugin,InteractionPlugin]}
-          initialView="dayGridMonth"
-          events={events}
-          eventClick={handleEventClick}
-          headerToolbar={{
-            start: "today",
-            center: "title",
-            end: "prev,next"
-          }}
-        />
-      </div>
-
-      <div id="Medications" className="tabcontent">
-        <h1>Medications</h1>
-        <p> . . . </p>
-      </div>
-      <div id="Appointments" className="tabcontent">
-        <h1>Appointments</h1>
-        <p> . . . </p>
-      </div>
-      <div id="Other" className="tabcontent">
-        <h1>Other</h1>
-        <p> . . . </p>
-      </div>
+      {/* Display FullCalendar only if activeTab is "Calendar" */}
+      {activeTab === 'Calendar' && (
+        <div id="Calendar">
+          <FullCalendar
+            plugins={[dayGridPlugin, InteractionPlugin]}
+            initialView="dayGridMonth"
+            events={events}
+            eventClick={handleEventClick}
+            headerToolbar={{
+              start: "today",
+              center: "title",
+              end: "prev,next"
+            }}
+          />
+        </div>
+      )}
+      {/* Display Medications content only if activeTab is "Medications" */}
+      {activeTab === 'Medications' && (
+        <div id="Medications" className="tabcontent">
+          <h1>Medications</h1>
+          <p>Medications go here...</p>
+        </div>
+      )}
     </div>
   );
 };

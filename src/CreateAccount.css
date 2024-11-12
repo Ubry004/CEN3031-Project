@@ -1,12 +1,37 @@
 /* CreateAccount.css */
 
+.h2{
+    color: white;
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+.signup-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #333333;
+    border-radius: 15px;
+    padding: 25px;
+    font-size: 1.5rem;
+    gap: 10px;
+    margin: 10px auto;
+  }
+
+.text-entry{
+    border-radius: 5px;
+    border: none;
+    padding: 2px;
+}
 .signup-form button {
-    background-color: #4CAF50;
+    background-color: #333333;
+    transition: background-color 0.3s ease;
     color: white;
     padding: 14px 20px;
     margin: 8px 0;
-    border: none;
+    border-radius: 15px;
     cursor: pointer;
     width: 100%;
-
 }
+.signup-form button:hover {
+    background-color: #4CAF50;
+  }

@@ -8,7 +8,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 import datetime
 # from datetime import datetime
 
-# We'll use Werkzeug for hashing later whenever we do that
+# TODO: Fix error handling to include rollbacks to account for potential faulty changes
 
 app = Flask(__name__)
 CORS(app)
@@ -98,6 +98,68 @@ To enforce role permissions:
 Store the user's role in the session after login and use it to determine what actions they can take
 '''
 
+# ================ GETTERS =============================================================================================
+
+@app.route('/fetch_role', methods=['GET'])
+def fetch_role(email): # for frontend, using email to grab role
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT Role FROM Users WHERE email = %s", (email,))
+        result = cursor.fetchone()
+        return result[0] if result else None
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/fetch_user_id', methods=['GET'])
+def fetch_user_id(email): # You can grab the user's ID if you know their email (post-login)
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Fetch the UserID based on the provided email
+        cursor.execute("SELECT UserID FROM Users WHERE Email = %s", (email,))
+        user = cursor.fetchone()
+
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        return jsonify({"UserID": user['UserID']}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/fetch_appointments', methods=['GET'])
+def fetch_appointments(userid):
+    if not userid:
+        return jsonify({"error": "Valid UserID is required"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Fetch all appointments for the given user
+        cursor.execute("SELECT AppointmentID, AppointmentDate, Description, Status, FROM Appointments WHERE UserID = %s", (userid,))
+        appointments = cursor.fetchall()
+
+        if appointments:
+            return jsonify({"appointments": appointments}), 200
+        else:
+            return jsonify({"message": "No appointments found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 # ================ LOGIN AND REGISTER FUNCTIONS ========================================================================
 
 # User login route
@@ -138,6 +200,12 @@ def register():
     first_name = data.get('firstName')
     last_name = data.get('lastName')
     email = data.get('email')
+    role = data.get('role')
+
+    op = False
+    if role == "operator" or role == "doctor":  # receives hospital number only if registering as an op or doctor
+        hospitalnum = data.get('hospitalnum')
+        op = True
 
     hashed_password = generate_password_hash(password)
 
@@ -145,9 +213,20 @@ def register():
     cursor = conn.cursor()
 
     try:
+        if op:
+            cursor.execute(
+                "INSERT INTO Users (Username, PasswordHash, FirstName, LastName, Email, Role) VALUES (%s, %s, %s, %s, %s)",
+                (username, hashed_password, first_name, last_name, email, role)
+            )
+            cursor.execute(
+                "INSERT INTO Users (Username, PasswordHash, FirstName, LastName, Email, Role) VALUES (%s, %s, %s, %s, %s)",
+                (username, hashed_password, first_name, last_name, email, role)
+            )
+            conn.commit()
+            return jsonify({"msg": "User created successfully"}), 201
         cursor.execute(
-            "INSERT INTO Users (Username, PasswordHash, FirstName, LastName, Email) VALUES (%s, %s, %s, %s, %s)",
-            (username, hashed_password, first_name, last_name, email)
+            "INSERT INTO Users (Username, PasswordHash, FirstName, LastName, Email, Role) VALUES (%s, %s, %s, %s, %s)",
+            (username, hashed_password, first_name, last_name, email, role)
         )
         conn.commit()
         return jsonify({"msg": "User created successfully"}), 201
@@ -316,6 +395,8 @@ def update_email(user_id):
         cursor.close()
         conn.close()
 
+# ===================== APPOINTMENTS ===================================================================================
+
 # Set Appointment
 @app.route('/set_appointment', methods=['POST'])
 def set_appointment():
@@ -356,6 +437,30 @@ def set_appointment():
         conn.close()
 
     return jsonify({"msg": "Appointment set successfully", "appointment_id": appointment_id}), 201
+
+@app.route('/mark_appointment_complete', methods=['POST'])
+def mark_appointment_completed(appointment_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if not appointment_id:
+        return jsonify({"error": "Appointment ID is required"}), 400
+
+    try:
+        # Update the status of the appointment to 'completed'
+        cursor.execute(
+            "UPDATE Appointments SET Status = 'completed' WHERE AppointmentID = %s",
+            (appointment_id,)
+        )
+        conn.commit()
+
+        if cursor.rowcount > 0:
+            return jsonify({"message": "Appointment marked as completed"}), 200
+        else:
+            return jsonify({"error": "Appointment not found"}), 404
+    finally:
+        cursor.close()
+        conn.close()
 
 # For testing
 @app.route('/')

@@ -40,6 +40,19 @@ INSERT INTO `appointments` (`AppointmentID`, `UserID`, `DoctorID`, `AppointmentD
 	(2, 4, 3, '2024-11-08 14:30:00', 'Follow-up appointment for blood work', 'scheduled'),
 	(3, 4, 3, '2024-11-15 09:00:00', 'Physical therapy session', 'completed');
 
+-- Dumping structure for table medicalusers.hospitals
+CREATE TABLE IF NOT EXISTS `hospitals` (
+  `ID` int(11) NOT NULL AUTO_INCREMENT,
+  `Name` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`ID`)
+) ENGINE=InnoDB AUTO_INCREMENT=5634 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+-- Dumping data for table medicalusers.hospitals: ~3 rows (approximately)
+INSERT INTO `hospitals` (`ID`, `Name`) VALUES
+	(1337, 'Angelfire Clinic'),
+	(3939, 'Hatsune Miku Hospital'),
+	(5633, 'Panya Inugami Care');
+
 -- Dumping structure for table medicalusers.medications
 CREATE TABLE IF NOT EXISTS `medications` (
   `MedicationID` int(11) NOT NULL AUTO_INCREMENT,
@@ -69,18 +82,40 @@ CREATE TABLE IF NOT EXISTS `users` (
   `Email` varchar(100) NOT NULL,
   `Role` enum('patient','doctor','operator','admin') NOT NULL DEFAULT 'patient',
   `CreatedAt` timestamp NULL DEFAULT current_timestamp(),
+  `HospitalID` int(11) DEFAULT NULL,
   PRIMARY KEY (`UserID`),
   UNIQUE KEY `Username` (`Username`),
-  UNIQUE KEY `Email` (`Email`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+  UNIQUE KEY `Email` (`Email`),
+  KEY `HID` (`HospitalID`),
+  CONSTRAINT `HID` FOREIGN KEY (`HospitalID`) REFERENCES `hospitals` (`ID`) ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- Dumping data for table medicalusers.users: ~5 rows (approximately)
-INSERT INTO `users` (`UserID`, `Username`, `PasswordHash`, `FirstName`, `LastName`, `Email`, `Role`, `CreatedAt`) VALUES
-	(1, 'alice_admin', 'hashed_password1', 'Alice', 'Smith', 'alice.smith@example.com', 'admin', '2024-10-26 04:30:43'),
-	(2, 'bob_operator', 'hashed_password2', 'Bob', 'Jones', 'bob.jones@example.com', 'operator', '2024-10-26 04:30:43'),
-	(3, 'charlie_doctor', 'hashed_password3', 'Charlie', 'Brown', 'charlie.brown@example.com', 'doctor', '2024-10-26 04:30:43'),
-	(4, 'dana_patient', 'hashed_password4', 'Dana', 'White', 'dana.white@example.com', 'patient', '2024-10-26 04:30:43'),
-	(5, 'test_user', 'password123', 'Test', 'User', 'test@example.com', 'patient', '2024-10-26 04:36:01');
+INSERT INTO `users` (`UserID`, `Username`, `PasswordHash`, `FirstName`, `LastName`, `Email`, `Role`, `CreatedAt`, `HospitalID`) VALUES
+	(1, 'alice_admin', 'hashed_password1', 'Alice', 'Smith', 'alice.smith@example.com', 'admin', '2024-10-26 04:30:43', NULL),
+	(2, 'bob_operator', 'hashed_password2', 'Bob', 'Jones', 'bob.jones@example.com', 'operator', '2024-10-26 04:30:43', NULL),
+	(3, 'charlie_doctor', 'hashed_password3', 'Charlie', 'Brown', 'charlie.brown@example.com', 'doctor', '2024-10-26 04:30:43', 5633),
+	(4, 'dana_patient', 'hashed_password4', 'Dana', 'White', 'dana.white@example.com', 'patient', '2024-10-26 04:30:43', NULL),
+	(5, 'test_user', 'scrypt:32768:8:1$H5VG71oxilyA6tAa$e27a3d7f7b7650511a0cc5538eba334dc7d5ac587aac08f07396a2faf3084c50d5ea83dc8578073e14cd00c66d0e6db2e18bc0e3449a366b7aee2abd27c6c086', 'Test', 'User', 'test@example.com', 'patient', '2024-11-10 23:55:49', NULL);
+
+-- Dumping structure for trigger medicalusers.validate_doctor_hospital
+SET @OLDTMP_SQL_MODE=@@SQL_MODE, SQL_MODE='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
+DELIMITER //
+CREATE TRIGGER validate_doctor_hospital
+BEFORE INSERT ON USERS
+FOR EACH ROW
+BEGIN
+    IF NEW.Role = 'doctor' THEN
+        -- Ensure HospitalID is not NULL for doctors
+        IF NEW.HospitalID IS NULL OR 
+           NOT EXISTS (SELECT 1 FROM HOSPITALS WHERE HospitalID = NEW.HospitalID) THEN
+            SIGNAL SQLSTATE '45000' 
+            SET MESSAGE_TEXT = 'Invalid or missing HospitalID for doctor role';
+        END IF;
+    END IF;
+END//
+DELIMITER ;
+SET SQL_MODE=@OLDTMP_SQL_MODE;
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;

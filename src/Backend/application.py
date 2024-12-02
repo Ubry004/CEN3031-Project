@@ -174,12 +174,22 @@ def login():
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM Users WHERE Username = %s", (username,))
     user = cursor.fetchone()
+    print("user:", user)
     cursor.close()
     conn.close()
 
     if user and check_password_hash(user['PasswordHash'], password):        # Create JWT token. Automatically signs the user out after 15 minutes
         # access_token = create_access_token(identity=user['UserID'], expires_delta=datetime.timedelta(minutes=15))
-        token = generate_jwt(user['UserID'])
+        payload = {
+            "UserID": user['UserID'],
+            "Username": user['Username'],
+            "FirstName": user['FirstName'],
+            "LastName": user['LastName'],
+            "Email": user['Email'],
+            "Role": user['Role'],
+            "HospitalID": user.get('HospitalID') # Uses get() in case the field is None
+        }
+        token = generate_jwt(payload)      # Generate token with the full payload
         return jsonify(access_token=token), 200
 
     return jsonify({"msg": "Bad username or password"}), 401
@@ -195,17 +205,14 @@ def logout():
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
+    print("incoming data: ", data)
     username = data.get('username')
     password = data.get('password')
     first_name = data.get('firstName')
     last_name = data.get('lastName')
     email = data.get('email')
-    role = data.get('role')
-
-    op = False
-    if role == "operator" or role == "doctor":  # receives hospital number only if registering as an op or doctor
-        hospitalnum = data.get('hospitalnum')
-        op = True
+    role = data.get('userRole').lower() # making it lowercase for sql
+    hospitalID = data.get('hospitalID') if role in ["operator", "doctor"] else None
 
     hashed_password = generate_password_hash(password)
 
@@ -213,24 +220,20 @@ def register():
     cursor = conn.cursor()
 
     try:
-        if op:
+        if role in ["operator", "doctor"] and hospitalID:
             cursor.execute(
-                "INSERT INTO Users (Username, PasswordHash, FirstName, LastName, Email, Role) VALUES (%s, %s, %s, %s, %s)",
-                (username, hashed_password, first_name, last_name, email, role)
-            )
+                "INSERT INTO Users (Username, PasswordHash, FirstName, LastName, Email, Role, HospitalID) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                (username, hashed_password, first_name, last_name, email, role, hospitalID)
+             )
+        else: 
             cursor.execute(
-                "INSERT INTO Users (Username, PasswordHash, FirstName, LastName, Email, Role) VALUES (%s, %s, %s, %s, %s)",
+                "INSERT INTO Users (Username, PasswordHash, FirstName, LastName, Email, Role) VALUES (%s, %s, %s, %s, %s, %s)",
                 (username, hashed_password, first_name, last_name, email, role)
-            )
-            conn.commit()
-            return jsonify({"msg": "User created successfully"}), 201
-        cursor.execute(
-            "INSERT INTO Users (Username, PasswordHash, FirstName, LastName, Email, Role) VALUES (%s, %s, %s, %s, %s)",
-            (username, hashed_password, first_name, last_name, email, role)
-        )
+             )
         conn.commit()
         return jsonify({"msg": "User created successfully"}), 201
     except mysql.Error as err:
+        print("SQL Error: ", err)
         return jsonify({"error": str(err)}), 400
     finally:
         cursor.close()

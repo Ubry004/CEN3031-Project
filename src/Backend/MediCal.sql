@@ -105,12 +105,12 @@ CREATE TRIGGER validate_doctor_hospital
 BEFORE INSERT ON USERS
 FOR EACH ROW
 BEGIN
-    IF NEW.Role = 'doctor' THEN
+    IF NEW.Role IN ('doctor', 'operator') THEN
         -- Ensure HospitalID is not NULL for doctors
         IF NEW.HospitalID IS NULL OR 
-           NOT EXISTS (SELECT 1 FROM HOSPITALS WHERE HospitalID = NEW.HospitalID) THEN
+           NOT EXISTS (SELECT 1 FROM HOSPITALS WHERE ID = NEW.HospitalID) THEN
             SIGNAL SQLSTATE '45000' 
-            SET MESSAGE_TEXT = 'Invalid or missing HospitalID for doctor role';
+            SET MESSAGE_TEXT = 'Invalid Hospital ID';
         END IF;
     END IF;
 END//

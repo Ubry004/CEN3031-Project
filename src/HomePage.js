@@ -1,21 +1,56 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { jwtDecode } from "jwt-decode";
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import InteractionPlugin from '@fullcalendar/interaction';
 import './HomePage.css';
 
 const HomePage = ({ token, setToken }) => {
-  HomePage.propTypes = {
-    token: PropTypes.string,
-    setToken: PropTypes.func.isRequired
-  };
+  const location = useLocation();
+  const { firstName, lastName, email, username, hospitalID, userRole } = location.state || {};
 
   const navigate = useNavigate();
-
   const [events, setEvents] = useState([]); // Start with an empty events array
   const [activeTab, setActiveTab] = useState('Calendar'); // Track active tab (Calendar, Medications, etc.)
+
+  // Decode the token
+  //console.log('Token in HomePage:', token);
+
+  if (!location.state) {
+    try {
+      let userInfo = jwtDecode(token);
+      const userID = userInfo.sub.UserID;
+      const username = userInfo.sub.Username;
+      const firstName = userInfo.sub.FirstName;
+      const lastName = userInfo.sub.LastName;
+      const email = userInfo.sub.Email;
+      const userRole = userInfo.sub.Role;
+      const hospitalID = userInfo.sub.HospitalID;
+      console.log('User ID:', userID);
+      console.log('Username:', username);
+      console.log('First Name:', firstName);
+      console.log('Last Name:', lastName);
+      console.log('Email:', email);
+      console.log('Role:', userRole);
+      console.log('Hospital ID:', hospitalID);
+    } catch (error) {
+      console.error('Invalid token:', error);
+      return <p>Invalid token. Please log in again.</p>;
+    }
+  } else {
+    console.log('User information from location state:', location.state);
+    console.log('User ID: Use getter from backend');
+    console.log('Username:', username);
+    console.log('First Name:', firstName);
+    console.log('Last Name:', lastName);
+    console.log('Email:', email);
+    console.log('Role:', userRole);
+    console.log('Hospital ID:', hospitalID);
+  }
+
 
   const addEvent = () => {
     const title = prompt("Enter event title:");
@@ -42,23 +77,7 @@ const HomePage = ({ token, setToken }) => {
   };
 
   //console.log('Current Token:', token); // Debugging line to check the token
-  
-  const navBar = (tabName) => {
-    const navElement = document.getElementById(tabName);
-  
-    if (tabName === 'Medications') {
-      if (navElement) {
-        navElement.style.display = "block";
-      }
-    } else if (tabName === 'Calendar') {
-      //setShowCalendar(true);
-      if (navElement) {
-        navElement.style.display = "none";
-      }
-    } else {
-      console.warn(`Element with id '${tabName}' does not exist.`);
-    }
-  };
+
 
   const toggleView = (view) => {
     setActiveTab(view);
@@ -102,6 +121,11 @@ const HomePage = ({ token, setToken }) => {
       )}
     </div>
   );
+};
+
+HomePage.propTypes = {
+  token: PropTypes.string,
+  setToken: PropTypes.func.isRequired
 };
 
 export default HomePage;

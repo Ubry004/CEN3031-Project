@@ -1,49 +1,74 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './CreateAccount.css';
 
 function CreateAccount() {
   // State variables to store user input
-  const [userType, setUserType] = useState('Patient'); // Default userType selection
+  const [userRole, setUserRole] = useState('Patient');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
-  const [hospitalId, setHospitalId] = useState('');
+  const [hospitalID, setHospitalID] = useState(null);
+
+  const navigate = useNavigate();
 
   // Function to handle form submission for account creation
-  const handleSignUp = (e) => {
+  const handleSignUp = async (e) => {
     e.preventDefault(); // Prevent default form submission behavior
-    console.log('New Account - User Type:', userType);
+    console.log('New Account - User Role:', userRole);
     console.log('New Account - First Name:', firstName);
     console.log('New Account - Last Name:', lastName);
     console.log('New Account - Email:', email);
     console.log('New Account - Username:', username);
     console.log('New Account - Password:', password);
-    if (userType === 'Doctor' || userType === 'Operator') {
-      console.log('New Account - Hospital ID:', hospitalId); // Log Hospital ID if applicable
+    if (userRole === 'Doctor' || userRole === 'Operator') {
+      console.log('New Account - Hospital ID:', hospitalID); // Log Hospital ID if applicable
     }
     // Call the register function with user input values
-    register(firstName, lastName, email, username, password); //NEED TO UPDATE WHEN BACKEND IS READY
+    try {
+      await register(firstName, lastName, email, username, password, hospitalID, userRole); 
+      navigate('/home', { 
+        state: { 
+          firstName, 
+          lastName, 
+          email, 
+          username,
+          hospitalID, 
+          userRole 
+        }
+      });
+    } catch (error) {
+      alert(`Error: ${error.message}`);
+      console.error('Error:', error); // Log the error and prevent navigation
+    }
   };
 
   // Function to handle user registration via API
-  function register(firstName, lastName, email, username, password) { //NEED TO UPDATE WHEN BACKEND IS READY
-    fetch('http://localhost:5000/register', {
+  async function register(firstName, lastName, email, username, password, hospitalID, userRole) {
+    try {
+      const response = await fetch('http://localhost:5000/register', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ firstName, lastName, email, username, password })
-    })
-    .then(response => {
-        if (!response.ok) throw new Error('Registration failed');
-        return response.json();
-    })
-    .then(data => {
-        console.log('Registration successful:', data); // Log successful registration
-    })
-    .catch(error => console.error('Error:', error)); // Log any errors encountered
+        body: JSON.stringify({ firstName, lastName, email, username, password, hospitalID, userRole })
+      });
+  
+      if (!response.ok) {
+        // Get error details from the response if available
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Registration failed');
+      }
+  
+      const data = await response.json();
+      console.log('Registration successful:', data);
+      return data;
+    } catch (error) {
+      console.error('Error in register function:', error.message);
+      throw error; // Rethrow the error to handle it in `handleSignUp`
+    }
   }
 
   return (
@@ -51,12 +76,12 @@ function CreateAccount() {
       <h1>Create an Account</h1> {/* Header for the form */}
       <form onSubmit={handleSignUp} className='signup-form'> {/* Signup form */}
       <div>
-          <label htmlFor="user-type">User Type: </label>
+          <label htmlFor="user-role">User Role: </label>
           <select
-            id="user-type"
+            id="user-role"
             className="dropdown"
-            value={userType}
-            onChange={(e) => setUserType(e.target.value)}
+            value={userRole}
+            onChange={(e) => setUserRole(e.target.value)}
             required
           >
             <option value="Patient">Patient</option>
@@ -64,16 +89,16 @@ function CreateAccount() {
             <option value="Operator">Operator</option>
           </select>
         </div>
-        {/* Hospital ID input, visible only if userType is "Doctor" or "Operator" */}
-        {(userType === 'Doctor' || userType === 'Operator') && (
+        {/* Hospital ID input, visible only if userRole is "Doctor" or "Operator" */}
+        {(userRole === 'Doctor' || userRole === 'Operator') && (
           <div>
             <label htmlFor="hospital-id">Hospital ID: </label>
             <input
-              type="text"
+              type="number"
               id="hospital-id"
               className="text-entry"
-              value={hospitalId}
-              onChange={(e) => setHospitalId(e.target.value)}
+              value={hospitalID}
+              onChange={(e) => setHospitalID(e.target.value)}
               required
             />
           </div>

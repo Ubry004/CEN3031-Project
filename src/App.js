@@ -12,11 +12,15 @@ function App() {
   const navigate = useNavigate(); // Hook for navigation
 
   // Function to handle form submission for login
-  const handleLogin = (e) => {
+  const handleLogin = async (e, setToken) => {
     e.preventDefault(); // Prevent default form submission behavior
-    login(username, password).then(success => {
-      if (success) navigate('/home'); // Navigate to home after login
-    }).catch(error => console.error('Login failed:', error)); // Log error if login fails
+    const success = await login(username, password);
+      if (success) {
+        navigate('/home'); // Navigate to home page on successful login
+      } else {
+        alert('Login failed. Please try again.'); // Alert user on login failure
+        console.log('Login failed');
+      }
   };
 
   // Asynchronous function to handle login logic
@@ -30,11 +34,15 @@ function App() {
         body: JSON.stringify({ username, password }), // Send username and password as JSON
       });
       
-      if (!response.ok) throw new Error('Login failed');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.msg || 'Login failed');
+      }
       
       const data = await response.json();
       setToken(data.access_token); // Store the token in state
       console.log('Login successful:', data);
+      console.log('Token set in App.js:', data.access_token);
       return true;
     } catch (error) {
       console.error('Error:', error);
@@ -53,7 +61,7 @@ function App() {
               <div>
                 <h1>Welcome to Medi-Cal</h1>
                 <h2>Login</h2>
-                <form onSubmit={handleLogin} className="login-form"> {/* Login form */}
+                <form onSubmit={(e) => handleLogin(e, setToken)} className="login-form"> {/* Login form */}
                   <div>
                     <label htmlFor="username">Username: </label>
                     <input

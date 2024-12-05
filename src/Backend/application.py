@@ -160,6 +160,56 @@ def fetch_appointments(userid):
         cursor.close()
         conn.close()
 
+@app.route('/fetch_medications', methods=['GET'])
+def fetch_medications():
+    userid = request.args.get('userid')
+
+    if not userid:
+        return jsonify({"error": "Valid UserID is required"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Fetch all medications for the given user
+        cursor.execute("""
+            SELECT MedicationID, MedicationName, Dosage, Frequency, StartDate, EndDate 
+            FROM Medications 
+            WHERE UserID = %s
+        """, (userid,))
+        medications = cursor.fetchall()
+
+        if medications:
+            return jsonify({"medications": medications}), 200
+        else:
+            return jsonify({"message": "No prescriptions found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/fetch_all_prescriptions', methods=['GET'])
+def fetch_all_prescriptions():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Fetch all prescriptions from the Medications table
+        cursor.execute("""
+            SELECT MedicationID, UserID, MedicationName, Dosage, Frequency, StartDate, EndDate 
+            FROM Medications
+        """)
+        prescriptions = cursor.fetchall()
+
+        if prescriptions:
+            return jsonify({"prescriptions": prescriptions}), 200
+        else:
+            return jsonify({"message": "Medications table is empty"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
 # ================ LOGIN AND REGISTER FUNCTIONS ========================================================================
 
 # User login route
@@ -464,6 +514,51 @@ def mark_appointment_completed(appointment_id):
     finally:
         cursor.close()
         conn.close()
+
+# ====================== Medications ===================================================================================
+
+@app.route('/set_medication', methods=['POST'])
+def set_medication():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    medication_name = data.get('medication_name')
+    dosage = data.get('dosage')
+    frequency = data.get('frequency')
+    start_date = data.get('start_date')
+    end_date = data.get('end_date')
+
+    # Validate required fields
+    if not (user_id and medication_name and dosage and frequency and start_date):
+        return jsonify({"msg": "Missing required fields"}), 400
+
+    # Convert dates to datetime
+    try:
+        start_datetime = datetime.datetime.strptime(start_date, "%Y-%m-%d")
+        end_datetime = datetime.datetime.strptime(end_date, "%Y-%m-%d") if end_date else None
+    except ValueError:
+        return jsonify({"msg": "Invalid date format. Use YYYY-MM-DD"}), 400
+
+    # Insert new medication into the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    query = """
+    INSERT INTO Medications (UserID, MedicationName, Dosage, Frequency, StartDate, EndDate)
+    VALUES (%s, %s, %s, %s, %s, %s)
+    """
+    values = (user_id, medication_name, dosage, frequency, start_datetime, end_datetime)
+
+    try:
+        cursor.execute(query, values)
+        conn.commit()
+        medication_id = cursor.lastrowid  # Get the ID of the newly created prescription
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"msg": "Failed to add medication", "error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+    return jsonify({"msg": "Medication added successfully", "medication_id": medication_id}), 201
 
 # For testing
 @app.route('/')

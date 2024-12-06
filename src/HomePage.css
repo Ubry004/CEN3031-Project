@@ -6,6 +6,7 @@
   flex-direction: column;
   height: 100%;
   width: 100%;
+  overflow: auto;
 }
 
 /* Top ribbon style */
@@ -17,9 +18,16 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 20px;
-  background-color: #333333;
+  background-color: #7BAFFE;
   color: white;
   z-index: 1000;
+}
+
+.homepage-header p {
+  left: 35%;
+  flex: 1;
+  text-align: center;
+  position: fixed;
 }
 
 /* Logo styling */
@@ -36,14 +44,14 @@
   gap: 10px;
   border: none;
   border-radius: 5px;
-  background-color: #007bff;
+  background-color: #4a90e2;
   color: white;
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
 .logout-button:hover {
-  background-color: #0056b3;
+  background-color: #ff392a;
 }
 
 /* Tab link styling */
@@ -53,24 +61,28 @@
 }
 
 .tablink {
-  background-color: #555;
+  background-color: #4a90e2;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 10px;
   cursor: pointer;
   padding: 10px 15px;
   font-size: 1rem;
   transition: background-color 0.3s ease;
 }
 
+#AptTab:hover {
+  background-color: #28a745;
+}
+
 .tablink:hover {
-  background-color: #777;
+  background-color: #9b59b6;
 }
 
 /* Tab content styling */
 .tabcontent {
   display: flex;
-  position: fixed;
+  position: absolute;
   top: 0;
   width: 500px;
   padding: 50px;
@@ -78,9 +90,9 @@
   text-align: center;
   color: white;
   border-radius: 15px;
-  background-color: #444;
   justify-content: flex-start;
   align-items: flex-start;
+  overflow-x: hidden;
 }
 
 #Calendar {
@@ -95,5 +107,80 @@
   height: 90vh;
 }
 
-#Medications { background-color: green; }
-#Other { background-color: orange; }
+#Medications { 
+  background-color: #1abc9c;  
+  overflow-y: auto; /* Enable scrolling for large content */
+  top: 83px;
+  left: 10px;
+  justify-content: center;
+  width: 94%; /* Adjusted width for consistency */
+  margin: 20px 20px; /* Center container and add vertical spacing */
+  padding: 20px; /* Inner spacing for the container */
+  border-radius: 15px; /* Rounded corners for smoother appearance */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  display: grid; /* Use CSS Grid */
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Flexible columns */
+  gap: 20px; /* Space between cards */
+  
+}
+
+#Medications h1 {
+  font-family: Arial, sans-serif; /* Modern font for readability */
+  font-size: 24px; /* Larger title size */
+  margin-bottom: 20px; /* Spacing below title */
+  color: #fff; /* White text for contrast */
+  text-align: center; /* Center-align title */
+  grid-column: span 5; /* Make the header span full width */
+}
+
+#Medications ul {
+  padding: 0; /* Remove default list padding */
+  margin: 0; /* Remove default margins */
+  display: contents; /* Prevent grid interference from the list container */
+}
+
+#Medications li {
+  list-style-type: none; /* Remove bullet points */
+  font-size: 18px; /* Larger font for the title */
+  padding: 15px; /* Inner spacing for each list item */
+  margin-bottom: 10px; /* Spacing between items */
+  background-color: #16a085; /* Slightly darker background */
+  color: #fff; /* White text for contrast */
+  border-radius: 10px; /* Rounded corners */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  transition: transform 0.2s, box-shadow 0.2s; /* Smooth hover effect */
+}
+
+#Medications li:hover {
+  transform: scale(1.05); /* Slight zoom on hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
+  cursor: default;
+}
+
+#Medications li strong {
+  display: block; /* Separate medication title onto its own line */
+  font-size: 24px; /* Larger font for the title */
+  margin-bottom: 5px; /* Spacing below title */
+  font-weight: bold; /* Emphasize title */
+}
+
+
+
+#Profile {
+  background-color: orange;
+  position: absolute; /* Allows precise positioning */
+  left: 50%; /* Move to the horizontal center */
+  transform: translate(-50%); /* Offset to ensure centering */
+  display: flex; /* Enables flexbox layout */
+  justify-content: center; /* Centers content horizontally */
+  align-items: center; /* Centers content vertically */
+  min-height: 50%; /* Adjust as necessary */
+  width: auto; /* Ensure width adapts to content */
+  text-align: center; /* Centers text inside block elements */
+  flex-direction: column; /* Stack children vertically */
+}
+
+#Profile p{
+  padding: 15px;
+  text-align: center; /* Centers text alignment inside the div */
+}

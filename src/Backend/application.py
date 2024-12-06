@@ -115,9 +115,11 @@ def fetch_role(email): # for frontend, using email to grab role
         cursor.close()
         conn.close()
 
-@app.route('/fetch_user_id', methods=['GET'])
+@app.route('/fetch_user_id/<string:email>', methods=['GET'])
 def fetch_user_id(email): # You can grab the user's ID if you know their email (post-login)
+    print(f"Received request to fetch user ID for email: {email}")
     if not email:
+        print("No email provided")
         return jsonify({"error": "Email is required"}), 400
 
     conn = get_db_connection()
@@ -128,42 +130,68 @@ def fetch_user_id(email): # You can grab the user's ID if you know their email (
         user = cursor.fetchone()
 
         if not user:
+            print(f"No user found for email: {email}")
             return jsonify({"error": "User not found"}), 404
 
-        return jsonify({"UserID": user['UserID']}), 200
+        print(f"User ID for email {email} is {user[0]}")
+        return jsonify({"UserID": user[0]}), 200
 
+    except Exception as e:
+        print(f"Error occurred: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/fetch_user_appointments/<int:userid>', methods=['GET'])
+def fetch_user_appointments(userid):
+    if not userid:
+        return jsonify({"error": "Valid UserID is required"}), 400
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Fetch all appointments for the given user
+        print("userid: ", userid)
+        cursor.execute("SELECT AppointmentID, AppointmentDate, Description, Status FROM Appointments WHERE UserID = %s", (userid,))
+        appointments = cursor.fetchall()
+
+
+        if appointments:
+            return jsonify({"appointments": appointments}), 200
+        else:
+            return jsonify({"message": "No appointments found"}), 404
+    except mysql.Error as err:
+        print("SQL Error: ", err)
+        return jsonify({"error": str(err)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
         conn.close()
 
-@app.route('/fetch_appointments', methods=['GET'])
-def fetch_appointments(userid):
-    if not userid:
-        return jsonify({"error": "Valid UserID is required"}), 400
-
+@app.route('/fetch_all_appointments', methods=['GET'])
+def fetch_all_appointments():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # Fetch all appointments for the given user
-        cursor.execute("SELECT AppointmentID, AppointmentDate, Description, Status, FROM Appointments WHERE UserID = %s", (userid,))
+        cursor.execute("SELECT AppointmentID, AppointmentDate, Description, Status FROM Appointments")
         appointments = cursor.fetchall()
 
         if appointments:
             return jsonify({"appointments": appointments}), 200
         else:
             return jsonify({"message": "No appointments found"}), 404
+    except mysql.Error as err:
+        print("SQL Error: ", err)
+        return jsonify({"error": str(err)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
         conn.close()
 
-@app.route('/fetch_medications', methods=['GET'])
-def fetch_medications():
-    userid = request.args.get('userid')
-
+@app.route('/fetch_user_medications/<int:userid>', methods=['GET'])
+def fetch_medications(userid):
     if not userid:
         return jsonify({"error": "Valid UserID is required"}), 400
 
@@ -172,13 +200,14 @@ def fetch_medications():
     try:
         # Fetch all medications for the given user
         cursor.execute("""
-            SELECT MedicationID, MedicationName, Dosage, Frequency, StartDate, EndDate 
+            SELECT MedicationID, UserID, MedicationName, Dosage, Frequency, StartDate, EndDate 
             FROM Medications 
             WHERE UserID = %s
         """, (userid,))
         medications = cursor.fetchall()
 
         if medications:
+            print("User Medications: ", medications)
             return jsonify({"medications": medications}), 200
         else:
             return jsonify({"message": "No prescriptions found"}), 404
@@ -188,7 +217,7 @@ def fetch_medications():
         cursor.close()
         conn.close()
 
-@app.route('/fetch_all_prescriptions', methods=['GET'])
+@app.route('/fetch_all_medications', methods=['GET'])
 def fetch_all_prescriptions():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -198,10 +227,11 @@ def fetch_all_prescriptions():
             SELECT MedicationID, UserID, MedicationName, Dosage, Frequency, StartDate, EndDate 
             FROM Medications
         """)
-        prescriptions = cursor.fetchall()
+        medications = cursor.fetchall()
 
-        if prescriptions:
-            return jsonify({"prescriptions": prescriptions}), 200
+        if medications:
+            print("All Medications: ", medications)
+            return jsonify({"medications": medications}), 200
         else:
             return jsonify({"message": "Medications table is empty"}), 404
     except Exception as e:
@@ -224,7 +254,7 @@ def login():
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM Users WHERE Username = %s", (username,))
     user = cursor.fetchone()
-    print("user:", user)
+    # print("user:", user)
     cursor.close()
     conn.close()
 
@@ -255,7 +285,7 @@ def logout():
 @app.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-    print("incoming data: ", data)
+    # print("incoming data: ", data)
     username = data.get('username')
     password = data.get('password')
     first_name = data.get('firstName')
@@ -454,10 +484,16 @@ def update_email(user_id):
 @app.route('/set_appointment', methods=['POST'])
 def set_appointment():
     data = request.get_json()
+    print("incoming data: ", data)
     user_id = data.get('user_id')
     doctor_id = data.get('doctor_id')
     appointment_date = data.get('appointment_date')
     description = data.get('description')
+
+    print(f"user_id: {user_id}")
+    print(f"doctor_id: {doctor_id}")
+    print(f"appointment_date: {appointment_date}")
+    print(f"description: {description}")
 
     # Validate required fields
     if not (user_id and doctor_id and appointment_date and description):

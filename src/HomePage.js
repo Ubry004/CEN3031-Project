@@ -10,10 +10,11 @@ import './HomePage.css';
 const HomePage = ({ token, setToken }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [events, setEvents] = useState([]); // Start with an empty events array
-  const [activeTab, setActiveTab] = useState('Calendar'); // Track active tab (Calendar, Medications, etc.)
+  const [events, setEvents] = useState([]); // State to hold event data
+  const [medications, setMedications] = useState([]); // State to hold medication data
+  const [activeTab, setActiveTab] = useState('Calendar'); // Track active tab (Calendar, Medications, Profile)
   let [userID, setUserID] = useState(null); // State to store the user ID
-  let [userRole, setUserRole] = useState(null); // State to store the user role
+  let [userRole, setUserRole] = useState(null);
   let [username, setUsername] = useState(null);
   let [firstName, setFirstName] = useState(null);
   let [lastName, setLastName] = useState(null);
@@ -87,6 +88,7 @@ const HomePage = ({ token, setToken }) => {
   useEffect(() => {
     if (userID && userRole) {
     fillCalendar(userID, userRole);
+    fillMedications(userID, userRole);
     }
 }, [userID, userRole]);
 
@@ -137,7 +139,7 @@ const HomePage = ({ token, setToken }) => {
           start: formattedDate // Date object in correct format
         };
       });
-      console.log("Formatted events:", formattedEvents);
+      // console.log("Formatted events:", formattedEvents);
       // Update FullCalendar events
       setEvents(formattedEvents);
 
@@ -148,8 +150,65 @@ const HomePage = ({ token, setToken }) => {
     }
   };
 
+  const fillMedications = async (userID, userRole) => {
+    try {
+      // Fetch medications from the backend
+      let url;
+      if (userRole === 'patient') {
+        console.log("Fetching medications for patient ID:", userID);
+        url = `/fetch_user_medications/${userID}`;
+      } else if (userRole === 'doctor' || userRole === 'operator') {
+        console.log("Fetching medications for userRole:", userRole);
+        url = `/fetch_all_medications`;
+      }
+      const response = await fetch(url);
+      console.log("Response:", response);
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log("No medications found.");
+          return;
+        }
+        throw new Error(`Error fetching medications: ${response.statusText}`);
+      }
+  
+      const data = await response.json();
+      const medications = data.medications;
+  
+      // Map backend medications to medication format
+      //console.log("Medications:", medications);
+      const formattedMedications = medications.map((medication) => {
+        const rawStartDate = medication[5];
+        const rawEndDate = medication[6];
 
-  //fillCalendar(userID); // Fill the calendar with appointments on page load
+        const parsedStartDate = new Date(rawStartDate);
+        const parsedEndDate = new Date(rawEndDate);
+        if (isNaN(parsedStartDate) || isNaN(parsedEndDate)) {
+          console.error("Invalid date:", rawStartDate);
+          console.error("Invalid date:", rawEndDate);
+          return null;
+        }
+      
+        // Format the date as ISO 8601 string (remove the time zone part)
+        const formattedStartDate = parsedStartDate.toISOString().slice(0, 10).replace("T", " ");
+        const formattedEndDate = parsedEndDate.toISOString().slice(0, 10).replace("T", " ");
+        return {
+          title: medication[2],
+          dosage: medication[3],
+          frequency: medication[4],
+          start_date: formattedStartDate,
+          end_date: formattedEndDate
+        };
+      });
+      console.log("Formatted medications:", formattedMedications);
+      // Update FullCalendar events
+      setMedications(formattedMedications);
+
+  
+      //console.log("Calendar successfully filled with appointments:", formattedEvents);
+    } catch (error) {
+      console.error("Error filling medications:", error);
+    }
+  };
 
   const addNewEvent = async () => {
     const title = prompt("Enter event title:");
@@ -159,9 +218,9 @@ const HomePage = ({ token, setToken }) => {
     if (title && start) {
       // Assuming user-related info is stored in local state or retrieved dynamically
       console.log("addNewEvent userID:", userID);
-      const user_id = userID; // Replace with actual user ID (e.g., from token or app state)
-      const doctor_id = 3; // Replace with actual doctor ID if applicable
-      const description = title; // Use title as the description for simplicity
+      const user_id = userID; // Replace with actual user ID (from token or app state)
+      const doctor_id = 3; // Replace with actual doctor ID if applicable (3 for now)
+      const description = title; // Use title as the description
   
       // Prepare the data payload
       const eventData = {
@@ -191,11 +250,10 @@ const HomePage = ({ token, setToken }) => {
             title: description,
             start: start,
           };
-          console.log("New event:", newEvent);
+          //console.log("New event:", newEvent);
           // Add the new event to the calendar if the backend operation succeeds
           fillCalendar(userID, userRole); // Refill the calendar with updated appointments
-          //setEvents([...events, newEvent]); // Use function to ensure correct state update
-          console.log("Events after adding new event:", events); // This will show the updated events after state update
+          //console.log("Events after adding new event:", events); // This will show the updated events after state update
 
         } else {
           const error = await response.json();
@@ -211,10 +269,59 @@ const HomePage = ({ token, setToken }) => {
     }
   };
 
-  useEffect(() => {
-    console.log('Events after detecting change:', events)
-    setEvents(events);
-  }, [events]);
+  const addNewMed = async () => {
+    // Much of the same as above, but for medications
+    const medication_name = prompt("Enter Medication Name:");
+    const dosage = prompt("What is the dosage of the medication?");
+    const frequency = prompt("What is the frequency of the medication?");
+    const start_date = prompt("Enter start date (YYYY-MM-DD):");
+    const end_date = prompt("Enter end date (YYYY-MM-DD):");
+
+    if (medication_name && dosage && frequency && start_date && end_date) {
+      const user_id = userID;
+      const medicationData = {
+        user_id,
+        medication_name,
+        dosage,
+        frequency,
+        start_date,
+        end_date,
+      };
+
+      try {
+        const response = await fetch('/set_medication', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(medicationData),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          //console.log("Medication saved successfully:", result);
+
+          const newMed = {
+            title: medication_name,
+            dosage: dosage,
+            frequency: frequency,
+            start_date: start_date,
+            end_date: end_date,
+          };
+          console.log("New medication:", newMed);
+          fillMedications(userID, userRole);
+
+        } else {
+          const error = await response.json();
+          alert(`Failed to add event: ${error.msg}`);
+          console.error("Error:", error);
+        }
+      } catch (err) {
+        console.error("Network error:", err);
+        alert("A network error occurred. Please try again.");
+      }
+    }
+  };
   
   const handleEventClick = (clickInfo) => { // Basic popup on event click
     const { title, start} = clickInfo.event;
@@ -224,6 +331,7 @@ const HomePage = ({ token, setToken }) => {
   const handleLogout = () => {
     setToken(null); // Reset the token on logout
     setEvents([]); // Clear the events array
+    setMedications([]); // Clear the medications array
     console.log('Logged out');
     navigate('/'); // Redirect to login page
   };
@@ -241,14 +349,15 @@ const HomePage = ({ token, setToken }) => {
         <div className="logo">Medi-Cal</div>
         <p>Welcome <strong>{username || 'Not available'}</strong></p>
         <div className="tabs">
-          <button id="AptTab" className="tablink" onClick={addNewEvent}>Add Appointment</button>
+          <button id="AptTab" className="tablink" onClick={activeTab === 'Calendar' ? addNewEvent : addNewMed}>
+            {activeTab === 'Calendar' ? 'Add Appointment' : 'Add Medication'}
+          </button>
           <button className="tablink" onClick={() => toggleView('Calendar')}>Calendar</button>
           <button className="tablink" onClick={() => toggleView('Medications')}>Medications</button>
           <button className="tablink" onClick={() => toggleView('Profile')}>Profile</button>
           <button className="logout-button" onClick={handleLogout}>Logout</button>
         </div>
       </header>
-
       {/* Display FullCalendar only if activeTab is "Calendar" */}
       {activeTab === 'Calendar' && (
         <div id="Calendar">
@@ -268,7 +377,14 @@ const HomePage = ({ token, setToken }) => {
       {activeTab === 'Medications' && (
         <div id="Medications" className="tabcontent">
           <h1>Medications</h1>
-          <p>Medications go here...</p> 
+          <ul>
+        {medications.map((med, index) => (
+          <li key={index}>
+            <strong>{med.title}</strong> ◦ Dosage: {med.dosage} <br /> ◦ Frequency: {med.frequency} 
+            <br /> ◦ Start Date: {med.start_date} <br /> ◦ End Date: {med.end_date}
+          </li>
+        ))}
+      </ul>
         </div>
       )}
       {/* Display Profile content only if activeTab is "Profile" */}

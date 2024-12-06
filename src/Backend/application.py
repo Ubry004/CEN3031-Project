@@ -190,10 +190,8 @@ def fetch_all_appointments():
         cursor.close()
         conn.close()
 
-@app.route('/fetch_medications', methods=['GET'])
-def fetch_medications():
-    userid = request.args.get('userid')
-
+@app.route('/fetch_user_medications/<int:userid>', methods=['GET'])
+def fetch_medications(userid):
     if not userid:
         return jsonify({"error": "Valid UserID is required"}), 400
 
@@ -202,13 +200,14 @@ def fetch_medications():
     try:
         # Fetch all medications for the given user
         cursor.execute("""
-            SELECT MedicationID, MedicationName, Dosage, Frequency, StartDate, EndDate 
+            SELECT MedicationID, UserID, MedicationName, Dosage, Frequency, StartDate, EndDate 
             FROM Medications 
             WHERE UserID = %s
         """, (userid,))
         medications = cursor.fetchall()
 
         if medications:
+            print("User Medications: ", medications)
             return jsonify({"medications": medications}), 200
         else:
             return jsonify({"message": "No prescriptions found"}), 404
@@ -218,7 +217,7 @@ def fetch_medications():
         cursor.close()
         conn.close()
 
-@app.route('/fetch_all_prescriptions', methods=['GET'])
+@app.route('/fetch_all_medications', methods=['GET'])
 def fetch_all_prescriptions():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -228,10 +227,11 @@ def fetch_all_prescriptions():
             SELECT MedicationID, UserID, MedicationName, Dosage, Frequency, StartDate, EndDate 
             FROM Medications
         """)
-        prescriptions = cursor.fetchall()
+        medications = cursor.fetchall()
 
-        if prescriptions:
-            return jsonify({"prescriptions": prescriptions}), 200
+        if medications:
+            print("All Medications: ", medications)
+            return jsonify({"medications": medications}), 200
         else:
             return jsonify({"message": "Medications table is empty"}), 404
     except Exception as e:

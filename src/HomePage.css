@@ -17,9 +17,14 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 20px;
-  background-color: #333333;
+  background-color: #7BAFFE;
   color: white;
   z-index: 1000;
+}
+
+.homepage-header p {
+  flex: 1;
+  text-align: center;
 }
 
 /* Logo styling */
@@ -36,14 +41,14 @@
   gap: 10px;
   border: none;
   border-radius: 5px;
-  background-color: #007bff;
+  background-color: #4a90e2;
   color: white;
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
 .logout-button:hover {
-  background-color: #0056b3;
+  background-color: #ff392a;
 }
 
 /* Tab link styling */
@@ -53,18 +58,22 @@
 }
 
 .tablink {
-  background-color: #555;
+  background-color: #4a90e2;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 10px;
   cursor: pointer;
   padding: 10px 15px;
   font-size: 1rem;
   transition: background-color 0.3s ease;
 }
 
+#AptTab:hover {
+  background-color: #28a745;
+}
+
 .tablink:hover {
-  background-color: #777;
+  background-color: #9b59b6;
 }
 
 /* Tab content styling */
@@ -78,9 +87,9 @@
   text-align: center;
   color: white;
   border-radius: 15px;
-  background-color: #444;
   justify-content: flex-start;
   align-items: flex-start;
+
 }
 
 #Calendar {
@@ -96,4 +105,22 @@
 }
 
 #Medications { background-color: green; }
-#Other { background-color: orange; }
+
+#Profile {
+  background-color: orange;
+  position: absolute; /* Allows precise positioning */
+  left: 50%; /* Move to the horizontal center */
+  transform: translate(-50%); /* Offset to ensure centering */
+  display: flex; /* Enables flexbox layout */
+  justify-content: center; /* Centers content horizontally */
+  align-items: center; /* Centers content vertically */
+  min-height: 50%; /* Adjust as necessary */
+  width: auto; /* Ensure width adapts to content */
+  text-align: center; /* Centers text inside block elements */
+  flex-direction: column; /* Stack children vertically */
+}
+
+#Profile p{
+  padding: 15px;
+  text-align: center; /* Centers text alignment inside the div */
+}

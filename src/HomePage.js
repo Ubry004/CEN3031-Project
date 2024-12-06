@@ -9,8 +9,6 @@ import './HomePage.css';
 
 const HomePage = ({ token, setToken }) => {
   const location = useLocation();
-  const userInfoFromState = location.state || {};
-
   const navigate = useNavigate();
   const [events, setEvents] = useState([]); // Start with an empty events array
   const [activeTab, setActiveTab] = useState('Calendar'); // Track active tab (Calendar, Medications, etc.)
@@ -21,6 +19,7 @@ const HomePage = ({ token, setToken }) => {
   let [lastName, setLastName] = useState(null);
   let [email, setEmail] = useState(null);
   let [hospitalID, setHospitalID] = useState(null);
+  
 
   const getuserID = async (email) => {
     try {
@@ -38,6 +37,7 @@ const HomePage = ({ token, setToken }) => {
   };
 
   useEffect(() => {
+    const userInfoFromState = location.state || {};
     if (userInfoFromState && !token) {
       //console.log('User information from userInfoFromState:', userInfoFromState);
 
@@ -47,8 +47,13 @@ const HomePage = ({ token, setToken }) => {
       setLastName(userInfoFromState.lastName);
       setEmail(userInfoFromState.email);
       setHospitalID(userInfoFromState.hospitalID);
-      console.log('calling setuserID');
-      setUserID(getuserID(userInfoFromState.email)); // Update userID only once when location.state changes
+      // console.log('calling setuserID');
+      const fetchUserID = async () => { // Async function to fetch user ID to displau on profile (would return a promise before)
+        const id = await getuserID(userInfoFromState.email);
+        setUserID(id); // Update userID after resolving
+      };
+  
+      fetchUserID(); // Call the async function
       console.log('Role from userInfoFromState:', userInfoFromState.userRole);
       console.log('Username from userInfoFromState:', userInfoFromState.username);
       console.log('First Name from userInfoFromState:', userInfoFromState.firstName);
@@ -77,7 +82,7 @@ const HomePage = ({ token, setToken }) => {
         console.error('Invalid token:', error);
       }
     }
-  }, [userInfoFromState, token]); // Trigger this effect only when location.state or token changes
+  }, [location.state, token]); // Trigger this effect only when location.state or token changes
 
   useEffect(() => {
     if (userID && userRole) {
@@ -112,8 +117,7 @@ const HomePage = ({ token, setToken }) => {
       // Map backend appointments to FullCalendar event format
       //console.log("Appointment:", appointments);
       const formattedEvents = appointments.map((appointment) => {
-        const rawDate = appointment[1]; // e.g., "Fri, 20 Dec 2024 06:00:00 GMT"
-        //console.log("Raw date:", rawDate);
+        const rawDate = appointment[1];
       
         // Convert the raw date string to a Date object
         const parsedDate = new Date(rawDate);
@@ -128,14 +132,15 @@ const HomePage = ({ token, setToken }) => {
         const formattedDate = parsedDate.toISOString().slice(0, 19).replace("T", " ");
         //console.log("Formatted date:", formattedDate);
         return {
-          id: appointment[0],  // AppointmentID
+          // id: appointment[0],  // AppointmentID
           title: appointment[2], // Description
           start: formattedDate // Date object in correct format
         };
       });
-      //console.log("Formatted events:", formattedEvents);
+      console.log("Formatted events:", formattedEvents);
       // Update FullCalendar events
       setEvents(formattedEvents);
+
   
       //console.log("Calendar successfully filled with appointments:", formattedEvents);
     } catch (error) {
@@ -182,13 +187,15 @@ const HomePage = ({ token, setToken }) => {
           console.log("Appointment saved successfully:", result);
 
           const newEvent = {
+            // id: user_id,
             title: description,
             start: start,
           };
-          //console.log("New event:", newEvent);
+          console.log("New event:", newEvent);
           // Add the new event to the calendar if the backend operation succeeds
-          setEvents([...events, newEvent]);
-          //console.log("Events after adding new event:", events);
+          fillCalendar(userID, userRole); // Refill the calendar with updated appointments
+          //setEvents([...events, newEvent]); // Use function to ensure correct state update
+          console.log("Events after adding new event:", events); // This will show the updated events after state update
 
         } else {
           const error = await response.json();
@@ -204,6 +211,11 @@ const HomePage = ({ token, setToken }) => {
     }
   };
 
+  useEffect(() => {
+    console.log('Events after detecting change:', events)
+    setEvents(events);
+  }, [events]);
+  
   const handleEventClick = (clickInfo) => { // Basic popup on event click
     const { title, start} = clickInfo.event;
     alert(`Title: ${title}\nStart: ${start.toISOString().slice(0, 10)}`);
@@ -211,6 +223,7 @@ const HomePage = ({ token, setToken }) => {
 
   const handleLogout = () => {
     setToken(null); // Reset the token on logout
+    setEvents([]); // Clear the events array
     console.log('Logged out');
     navigate('/'); // Redirect to login page
   };
@@ -226,10 +239,12 @@ const HomePage = ({ token, setToken }) => {
     <div className="homepage">
       <header className="homepage-header">
         <div className="logo">Medi-Cal</div>
+        <p>Welcome <strong>{username || 'Not available'}</strong></p>
         <div className="tabs">
-          <button className="tablink" onClick={addNewEvent}>Add Appointment</button>
+          <button id="AptTab" className="tablink" onClick={addNewEvent}>Add Appointment</button>
           <button className="tablink" onClick={() => toggleView('Calendar')}>Calendar</button>
           <button className="tablink" onClick={() => toggleView('Medications')}>Medications</button>
+          <button className="tablink" onClick={() => toggleView('Profile')}>Profile</button>
           <button className="logout-button" onClick={handleLogout}>Logout</button>
         </div>
       </header>
@@ -243,8 +258,7 @@ const HomePage = ({ token, setToken }) => {
             events={events}
             eventClick={handleEventClick}
             headerToolbar={{
-              start: "today",
-              center: "title",
+              start: "title",
               end: "prev,next"
             }}
           />
@@ -254,7 +268,20 @@ const HomePage = ({ token, setToken }) => {
       {activeTab === 'Medications' && (
         <div id="Medications" className="tabcontent">
           <h1>Medications</h1>
-          <p>Medications go here...</p>
+          <p>Medications go here...</p> 
+        </div>
+      )}
+      {/* Display Profile content only if activeTab is "Profile" */}
+      {activeTab === 'Profile' && (
+        <div id="Profile" className="tabcontent">
+          <h1>Profile</h1>
+          <p><strong>User ID:</strong> {userID || 'Not available'}</p>
+          <p><strong>Role:</strong> {userRole || 'Not available'}</p>
+          <p><strong>Username:</strong> {username || 'Not available'}</p>
+          <p><strong>First Name:</strong> {firstName || 'Not available'}</p>
+          <p><strong>Last Name:</strong> {lastName || 'Not available'}</p>
+          <p><strong>Email:</strong> {email || 'Not available'}</p>
+          <p><strong>Hospital ID:</strong> {hospitalID || 'Not available'}</p>
         </div>
       )}
     </div>

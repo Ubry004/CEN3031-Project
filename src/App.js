@@ -41,8 +41,8 @@ function App() {
       
       const data = await response.json();
       setToken(data.access_token); // Store the token in state
-      console.log('Login successful:', data);
-      console.log('Token set in App.js:', data.access_token);
+      //console.log('Login successful:', data);
+      //console.log('Token set in App.js:', data.access_token);
       return true;
     } catch (error) {
       console.error('Error:', error);
@@ -84,7 +84,7 @@ function App() {
                       required // Input is required
                     />
                   </div>
-                  <button type="submit">Login</button> {/* Submit button */}
+                  <button type="submit"><strong>Login</strong></button> {/* Submit button */}
                 </form>
                 <p className="new-user-message">
                   New here? <Link to="/create-account">Create an account</Link> {/* Link to create account */}
